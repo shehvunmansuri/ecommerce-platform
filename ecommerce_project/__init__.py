@@ -1,1 +1,1 @@
-# ecommerce_project/__init__.py
+# ecommerce_project package

@@ -1,1 +1,1 @@
-# apps package
+# Accounts app

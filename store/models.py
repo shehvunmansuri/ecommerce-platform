@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
-# Custom User Model
+# ============ USER MODEL ============
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, default='')
@@ -13,6 +13,18 @@ class User(AbstractUser):
     zip_code = models.CharField(max_length=20, blank=True, default='')
     is_customer = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # Fix the clash with auth.User
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='store_user_groups',
+        blank=True
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='store_user_permissions',
+        blank=True
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -24,7 +36,7 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
-# Category Model
+# ============ CATEGORY MODEL ============
 class Category(models.Model):
     name = models.CharField(max_length=200, unique=True)
     description = models.TextField(blank=True, default='')
@@ -40,7 +52,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-# Product Model
+# ============ PRODUCT MODEL ============
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=200)
@@ -63,7 +75,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-# Review Model
+# ============ REVIEW MODEL ============
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
@@ -78,9 +90,9 @@ class Review(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.product.name} - {self.user.username}'
+        return f'{self.product.name} - {self.user.username} ({self.rating}★)'
 
-# Cart Model
+# ============ CART MODELS ============
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,7 +104,6 @@ class Cart(models.Model):
     def __str__(self):
         return f'Cart for {self.user.email}'
 
-# CartItem Model
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -107,10 +118,10 @@ class CartItem(models.Model):
     def __str__(self):
         return f'{self.product.name} x {self.quantity}'
 
-# Order Model
+# ============ ORDER MODELS ============
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
+        ('pending', 'Pending Payment'),
         ('paid', 'Paid'),
         ('shipped', 'Shipped'),
         ('delivered', 'Delivered'),
@@ -141,7 +152,6 @@ class Order(models.Model):
     def __str__(self):
         return self.order_number
 
-# OrderItem Model
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
@@ -160,7 +170,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f'{self.product.name} x {self.quantity}'
 
-# Payment Model
+# ============ PAYMENT MODEL ============
 class Payment(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
